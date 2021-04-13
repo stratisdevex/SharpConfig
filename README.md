@@ -169,13 +169,13 @@ class ThisTypeShouldAlwaysBeIgnored
 class SomeClass
 {
     [SharpConfig.Ignore]
-    public ThisTypeShouldAlwaysBeIngored T1 { get; set; }
+    public ThisTypeShouldAlwaysBeIgnored T1 { get; set; }
 
     [SharpConfig.Ignore]
-    public ThisTypeShouldAlwaysBeIngored T2 { get; set; }
+    public ThisTypeShouldAlwaysBeIgnored T2 { get; set; }
 
     [SharpConfig.Ignore]
-    public ThisTypeShouldAlwaysBeIngored T3 { get; set; }
+    public ThisTypeShouldAlwaysBeIgnored T3 { get; set; }
 }
 ```
 
