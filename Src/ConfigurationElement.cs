@@ -1,8 +1,7 @@
-// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System;
-using System.Collections.Generic;
 
 namespace SharpConfig
 {
@@ -16,7 +15,9 @@ namespace SharpConfig
     internal ConfigurationElement(string name)
     {
       if (string.IsNullOrEmpty(name))
-        throw new ArgumentNullException("name");
+      {
+        throw new ArgumentNullException(nameof(name));
+      }
 
       Name = name;
     }
@@ -75,7 +76,9 @@ namespace SharpConfig
 
       int iNewLine = Comment.IndexOfAny(Environment.NewLine.ToCharArray());
       if (iNewLine >= 0)
+      {
         comment = comment.Substring(0, iNewLine);
+      }
 
       return (Configuration.PreferredCommentChar + " " + comment);
     }

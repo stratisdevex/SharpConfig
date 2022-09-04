@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System;
@@ -12,15 +12,9 @@ namespace SharpConfig
   /// </summary>
   public sealed class Setting : ConfigurationElement
   {
-    #region Fields
-
-    private int mCachedArraySize;
-    private bool mShouldCalculateArraySize;
-    private char mCachedArrayElementSeparator;
-
-    #endregion
-
-    #region Construction
+    private int _cachedArraySize;
+    private bool _shouldCalculateArraySize;
+    private char _cachedArrayElementSeparator;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Setting"/> class.
@@ -39,12 +33,8 @@ namespace SharpConfig
         : base(name)
     {
       SetValue(value);
-      mCachedArrayElementSeparator = Configuration.ArrayElementSeparator;
+      _cachedArrayElementSeparator = Configuration.ArrayElementSeparator;
     }
-
-    #endregion
-
-    #region Properties
 
     /// <summary>
     /// Gets a value indicating whether this setting's value is empty.
@@ -63,7 +53,9 @@ namespace SharpConfig
         string value = StringValue;
 
         if (value[0] == '\"')
+        {
           value = value.Trim('\"');
+        }
 
         return value;
       }
@@ -273,11 +265,8 @@ namespace SharpConfig
       get
       {
         // Decode the bytes back to chars.
-        var bytes = ByteValueArray;
-        if (bytes != null)
-          return Encoding.UTF8.GetChars(ByteValueArray);
-        else
-          return null;
+        byte[] bytes = ByteValueArray;
+        return bytes != null ? Encoding.UTF8.GetChars(ByteValueArray) : null;
       }
       set
       {
@@ -288,7 +277,9 @@ namespace SharpConfig
           ByteValueArray = Encoding.UTF8.GetBytes(value);
         }
         else
+        {
           SetEmptyValue();
+        }
       }
     }
 
@@ -308,19 +299,19 @@ namespace SharpConfig
       {
         // If the user changed the array element separator during the lifetime
         // of this setting, we have to recalculate the array size.
-        if (mCachedArrayElementSeparator != Configuration.ArrayElementSeparator)
+        if (_cachedArrayElementSeparator != Configuration.ArrayElementSeparator)
         {
-          mCachedArrayElementSeparator = Configuration.ArrayElementSeparator;
-          mShouldCalculateArraySize = true;
+          _cachedArrayElementSeparator = Configuration.ArrayElementSeparator;
+          _shouldCalculateArraySize = true;
         }
 
-        if (mShouldCalculateArraySize)
+        if (_shouldCalculateArraySize)
         {
-          mCachedArraySize = CalculateArraySize();
-          mShouldCalculateArraySize = false;
+          _cachedArraySize = CalculateArraySize();
+          _shouldCalculateArraySize = false;
         }
 
-        return mCachedArraySize;
+        return _cachedArraySize;
       }
     }
 
@@ -329,14 +320,12 @@ namespace SharpConfig
       int size = 0;
       var enumerator = new SettingArrayEnumerator(RawValue, false);
       while (enumerator.Next())
+      {
         ++size;
+      }
 
       return (enumerator.IsValid ? size : -1);
     }
-
-    #endregion
-
-    #region GetValue
 
     /// <summary>
     /// Gets this setting's value as a specific type.
@@ -350,13 +339,19 @@ namespace SharpConfig
     public object GetValue(Type type)
     {
       if (type == null)
-        throw new ArgumentNullException("type");
+      {
+        throw new ArgumentNullException(nameof(type));
+      }
 
       if (type.IsArray)
+      {
         throw new InvalidOperationException("To obtain an array value, use GetValueArray() instead of GetValue().");
+      }
 
-      if (this.IsArray)
+      if (IsArray)
+      {
         throw new InvalidOperationException("The setting represents an array. Use GetValueArray() to obtain its value.");
+      }
 
       return CreateObjectFromString(RawValue, type);
     }
@@ -373,13 +368,17 @@ namespace SharpConfig
     public object[] GetValueArray(Type elementType)
     {
       if (elementType.IsArray)
+      {
         throw CreateJaggedArraysNotSupportedEx(elementType);
+      }
 
       int myArraySize = this.ArraySize;
       if (ArraySize < 0)
+      {
         return null;
+      }
 
-      var values = new object[myArraySize];
+      object[] values = new object[myArraySize];
 
       if (myArraySize > 0)
       {
@@ -405,13 +404,17 @@ namespace SharpConfig
     /// <exception cref="InvalidOperationException">When the setting represents an array.</exception>
     public T GetValue<T>()
     {
-      var type = typeof(T);
+      Type type = typeof(T);
 
       if (type.IsArray)
+      {
         throw new InvalidOperationException("To obtain an array value, use GetValueArray() instead of GetValue().");
+      }
 
       if (IsArray)
+      {
         throw new InvalidOperationException("The setting represents an array. Use GetValueArray() to obtain its value.");
+      }
 
       return (T)CreateObjectFromString(RawValue, type);
     }
@@ -427,14 +430,18 @@ namespace SharpConfig
     /// <returns>The values of this setting as an array.</returns>
     public T[] GetValueArray<T>()
     {
-      var type = typeof(T);
+      Type type = typeof(T);
 
       if (type.IsArray)
+      {
         throw CreateJaggedArraysNotSupportedEx(type);
+      }
 
       int myArraySize = ArraySize;
       if (myArraySize < 0)
+      {
         return null;
+      }
 
       var values = new T[myArraySize];
 
@@ -466,21 +473,29 @@ namespace SharpConfig
     /// <typeparam name="T">The type of the object to retrieve.</typeparam>
     public T GetValueOrDefault<T>(T defaultValue, bool setDefault = false)
     {
-      var type = typeof(T);
+      Type type = typeof(T);
 
       if (type.IsArray)
+      {
         throw new InvalidOperationException("GetValueOrDefault<T> cannot be used with arrays.");
+      }
 
       if (IsArray)
+      {
         throw new InvalidOperationException("The setting represents an array. Use GetValueArray() to obtain its value.");
+      }
 
       var result = CreateObjectFromString(RawValue, type, true);
 
       if (result != null)
+      {
         return (T)result;
+      }
 
       if (setDefault)
+      {
         SetValue(defaultValue);
+      }
 
       return defaultValue;
     }
@@ -488,30 +503,30 @@ namespace SharpConfig
     // Converts the value of a single element to a desired type.
     private static object CreateObjectFromString(string value, Type dstType, bool tryConvert = false)
     {
-      var underlyingType = Nullable.GetUnderlyingType(dstType);
+      Type underlyingType = Nullable.GetUnderlyingType(dstType);
       if (underlyingType != null)
       {
         if (string.IsNullOrEmpty(value))
+        {
           return null; // Returns Nullable<T>().
+        }
 
         // Otherwise, continue with our conversion using
         // the underlying type of the nullable.
         dstType = underlyingType;
       }
 
-      var converter = Configuration.FindTypeStringConverter(dstType);
+      ITypeStringConverter converter = Configuration.FindTypeStringConverter(dstType);
 
-      var obj = converter.TryConvertFromString(value, dstType);
+      object obj = converter.TryConvertFromString(value, dstType);
 
       if (obj == null && !tryConvert)
+      {
         throw SettingValueCastException.Create(value, dstType, null);
+      }
 
       return obj;
     }
-
-    #endregion
-
-    #region SetValue
 
     /// <summary>
     /// Sets the value of this setting via an object.
@@ -526,57 +541,68 @@ namespace SharpConfig
         return;
       }
 
-      var type = value.GetType();
+      Type type = value.GetType();
       if (type.IsArray)
       {
-        var elementType = type.GetElementType();
+        Type elementType = type.GetElementType();
         if (elementType != null && elementType.IsArray)
+        {
           throw CreateJaggedArraysNotSupportedEx(type.GetElementType());
+        }
 
         var values = value as Array;
         if (values != null)
         {
-          var strings = new string[values.Length];
+          string[] strings = new string[values.Length];
 
           for (int i = 0; i < values.Length; i++)
           {
             object elemValue = values.GetValue(i);
-            var converter = Configuration.FindTypeStringConverter(elemValue.GetType());
+            ITypeStringConverter converter = Configuration.FindTypeStringConverter(elemValue.GetType());
             strings[i] = GetValueForOutput(converter.ConvertToString(elemValue));
           }
 
           RawValue = $"{{{string.Join(Configuration.ArrayElementSeparator.ToString(), strings)}}}";
         }
-        if (values != null) mCachedArraySize = values.Length;
-        mShouldCalculateArraySize = false;
+
+        if (values != null)
+        {
+          _cachedArraySize = values.Length;
+        }
+
+        _shouldCalculateArraySize = false;
       }
       else
       {
-        var converter = Configuration.FindTypeStringConverter(type);
+        ITypeStringConverter converter = Configuration.FindTypeStringConverter(type);
         RawValue = converter.ConvertToString(value);
-        mShouldCalculateArraySize = true;
+        _shouldCalculateArraySize = true;
       }
     }
 
     private void SetEmptyValue()
     {
       RawValue = string.Empty;
-      mCachedArraySize = -1;
-      mShouldCalculateArraySize = false;
+      _cachedArraySize = -1;
+      _shouldCalculateArraySize = false;
     }
-
-    #endregion
 
     private static string GetValueForOutput(string rawValue)
     {
       if (Configuration.OutputRawStringValues)
+      {
         return rawValue;
+      }
 
       if (rawValue.StartsWith("{") && rawValue.EndsWith("}"))
+      {
         return rawValue;
+      }
 
       if (rawValue.StartsWith("\"") && rawValue.EndsWith("\""))
+      {
         return rawValue;
+      }
 
       if (
         rawValue.IndexOf(" ", StringComparison.Ordinal) >= 0 || (
@@ -596,10 +622,9 @@ namespace SharpConfig
     /// <returns>The element's expression as a string.</returns>
     protected override string GetStringExpression()
     {
-      if (Configuration.SpaceBetweenEquals)
-        return $"{Name} = {GetValueForOutput(RawValue)}";
-      else
-        return $"{Name}={GetValueForOutput(RawValue)}";
+      return Configuration.SpaceBetweenEquals ?
+        $"{Name} = {GetValueForOutput(RawValue)}" :
+        $"{Name}={GetValueForOutput(RawValue)}";
     }
 
     private static ArgumentException CreateJaggedArraysNotSupportedEx(Type type)
@@ -607,7 +632,9 @@ namespace SharpConfig
       // Determine the underlying element type.
       Type elementType = type.GetElementType();
       while (elementType != null && elementType.IsArray)
+      {
         elementType = elementType.GetElementType();
+      }
 
       throw new ArgumentException(
           $"Jagged arrays are not supported. The type you have specified is '{type.Name}', but '{elementType?.Name}' was expected.");

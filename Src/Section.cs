@@ -1,9 +1,10 @@
-// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace SharpConfig
@@ -18,7 +19,7 @@ namespace SharpConfig
     /// </summary>
     public const string DefaultSectionName = "$SharpConfigDefaultSection";
 
-    private readonly List<Setting> mSettings;
+    private readonly List<Setting> _settings;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Section"/> class.
@@ -28,7 +29,7 @@ namespace SharpConfig
     public Section(string name)
         : base(name)
     {
-      mSettings = new List<Setting>();
+      _settings = new List<Setting>();
     }
 
     /// <summary>
@@ -50,15 +51,19 @@ namespace SharpConfig
     public static Section FromObject(string name, object obj)
     {
       if (string.IsNullOrEmpty(name))
-        throw new ArgumentException("The section name must not be null or empty.", "name");
+      {
+        throw new ArgumentException("The section name must not be null or empty.", nameof(name));
+      }
 
       if (obj == null)
-        throw new ArgumentNullException("obj");
+      {
+        throw new ArgumentNullException(nameof(obj));
+      }
 
       var section = new Section(name);
-      var type = obj.GetType();
+      Type type = obj.GetType();
 
-      foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+      foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
       {
         if (!prop.CanRead || ShouldIgnoreMappingFor(prop))
         {
@@ -67,11 +72,11 @@ namespace SharpConfig
         }
 
         var setting = new Setting(prop.Name, prop.GetValue(obj, null));
-        section.mSettings.Add(setting);
+        section._settings.Add(setting);
       }
 
       // Repeat for each public field.
-      foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+      foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
       {
         if (ShouldIgnoreMappingFor(field))
         {
@@ -80,7 +85,7 @@ namespace SharpConfig
         }
 
         var setting = new Setting(field.Name, field.GetValue(obj));
-        section.mSettings.Add(setting);
+        section._settings.Add(setting);
       }
 
       return section;
@@ -134,7 +139,9 @@ namespace SharpConfig
     public object ToObject(Type type)
     {
       if (type == null)
+      {
         throw new ArgumentNullException(type.Name);
+      }
 
       var obj = Activator.CreateInstance(type);
       SetValuesTo(obj);
@@ -154,21 +161,25 @@ namespace SharpConfig
     public void GetValuesFrom(object obj)
     {
       if (obj == null)
-        throw new ArgumentNullException("obj");
+      {
+        throw new ArgumentNullException(nameof(obj));
+      }
 
-      var type = obj.GetType();
+      Type type = obj.GetType();
 
       // Scan the type's properties.
-      foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+      foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
       {
         if (!prop.CanRead)
+        {
           continue;
+        }
 
         SetSettingValueFromMemberInfo(prop, obj);
       }
 
       // Scan the type's fields.
-      foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+      foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
       {
         SetSettingValueFromMemberInfo(field, obj);
       }
@@ -177,24 +188,29 @@ namespace SharpConfig
     private void SetSettingValueFromMemberInfo(MemberInfo info, object instance)
     {
       if (ShouldIgnoreMappingFor(info))
-        return;
-
-      var setting = FindSetting(info.Name);
-      if (setting != null)
       {
-        object value = null;
-
-        if (info is FieldInfo)
-        {
-          value = ((FieldInfo)info).GetValue(instance);
-        }
-        else if (info is PropertyInfo)
-        {
-          value = ((PropertyInfo)info).GetValue(instance, null);
-        }
-
-        setting.SetValue(value);
+        return;
       }
+
+      Setting setting = FindSetting(info.Name);
+      if (setting == null)
+      {
+        return;
+      }
+
+      object value = null;
+
+      switch (info)
+      {
+        case FieldInfo fieldInfo:
+          value = fieldInfo.GetValue(instance);
+          break;
+        case PropertyInfo propertyInfo:
+          value = propertyInfo.GetValue(instance, null);
+          break;
+      }
+
+      setting.SetValue(value);
     }
 
     /// <summary>
@@ -209,19 +225,25 @@ namespace SharpConfig
     public void SetValuesTo(object obj)
     {
       if (obj == null)
-        throw new ArgumentNullException("obj");
+      {
+        throw new ArgumentNullException(nameof(obj));
+      }
 
-      var type = obj.GetType();
+      Type type = obj.GetType();
 
       // Scan the type's properties.
       foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
       {
         if (!prop.CanWrite || ShouldIgnoreMappingFor(prop))
+        {
           continue;
+        }
 
-        var setting = FindSetting(prop.Name);
+        Setting setting = FindSetting(prop.Name);
         if (setting == null)
+        {
           continue;
+        }
 
         object value = prop.PropertyType.IsArray ?
           setting.GetValueArray(prop.PropertyType.GetElementType()) :
@@ -251,15 +273,19 @@ namespace SharpConfig
       }
 
       // Scan the type's fields.
-      foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+      foreach (FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
       {
         // Skip readonly fields.
         if (field.IsInitOnly || ShouldIgnoreMappingFor(field))
+        {
           continue;
+        }
 
-        var setting = FindSetting(field.Name);
+        Setting setting = FindSetting(field.Name);
         if (setting == null)
+        {
           continue;
+        }
 
         object value = field.FieldType.IsArray ?
           setting.GetValueArray(field.FieldType.GetElementType()) :
@@ -276,7 +302,9 @@ namespace SharpConfig
           }
 
           for (int i = 0; i < settingArray.Length; i++)
+          {
             fieldArray.SetValue(settingArray.GetValue(i), i);
+          }
 
           field.SetValue(obj, fieldArray);
         }
@@ -294,23 +322,23 @@ namespace SharpConfig
       {
         return true;
       }
-      else
+
+      switch (member)
       {
-        if (member as PropertyInfo != null)
-          return (member as PropertyInfo).PropertyType.GetCustomAttributes(typeof(IgnoreAttribute), false).Length > 0;
-
-        if (member as FieldInfo != null)
-          return (member as FieldInfo).FieldType.GetCustomAttributes(typeof(IgnoreAttribute), false).Length > 0;
+        case PropertyInfo propertyInfo:
+          return propertyInfo.PropertyType.GetCustomAttributes(typeof(IgnoreAttribute), false).Length > 0;
+        case FieldInfo fieldInfo:
+          return fieldInfo.FieldType.GetCustomAttributes(typeof(IgnoreAttribute), false).Length > 0;
+        default:
+          return false;
       }
-
-      return false;
     }
 
     /// <summary>
     /// Gets an enumerator that iterates through the section.
     /// </summary>
     public IEnumerator<Setting> GetEnumerator()
-      => mSettings.GetEnumerator();
+      => _settings.GetEnumerator();
 
     /// <summary>
     /// Gets an enumerator that iterates through the section.
@@ -328,12 +356,16 @@ namespace SharpConfig
     public void Add(Setting setting)
     {
       if (setting == null)
-        throw new ArgumentNullException("setting");
+      {
+        throw new ArgumentNullException(nameof(setting));
+      }
 
       if (Contains(setting))
+      {
         throw new ArgumentException("The specified setting already exists in the section.");
+      }
 
-      mSettings.Add(setting);
+      _settings.Add(setting);
     }
 
     /// <summary>
@@ -371,7 +403,9 @@ namespace SharpConfig
     public bool Remove(string settingName)
     {
       if (string.IsNullOrEmpty(settingName))
-        throw new ArgumentNullException("settingName");
+      {
+        throw new ArgumentNullException(nameof(settingName));
+      }
 
       return Remove(FindSetting(settingName));
     }
@@ -382,7 +416,7 @@ namespace SharpConfig
     /// <param name="setting">The setting to remove.</param>
     /// <returns>True if the setting was removed; false otherwise.</returns>
     public bool Remove(Setting setting)
-      => mSettings.Remove(setting);
+      => _settings.Remove(setting);
 
     /// <summary>
     /// Removes all settings that have a specific name.
@@ -393,7 +427,9 @@ namespace SharpConfig
     public void RemoveAllNamed(string settingName)
     {
       if (string.IsNullOrEmpty(settingName))
-        throw new ArgumentNullException("settingName");
+      {
+        throw new ArgumentNullException(nameof(settingName));
+      }
 
       while (Remove(settingName)) ;
     }
@@ -402,7 +438,7 @@ namespace SharpConfig
     /// Clears the section of all settings.
     /// </summary>
     public void Clear()
-      => mSettings.Clear();
+      => _settings.Clear();
 
     /// <summary>
     /// Determines whether a specified setting is contained in the section.
@@ -410,7 +446,7 @@ namespace SharpConfig
     /// <param name="setting">The setting to check for containment.</param>
     /// <returns>True if the setting is contained in the section; false otherwise.</returns>
     public bool Contains(Setting setting)
-      => mSettings.Contains(setting);
+      => _settings.Contains(setting);
 
     /// <summary>
     /// Determines whether a specifically named setting is contained in the section.
@@ -422,7 +458,9 @@ namespace SharpConfig
     public bool Contains(string settingName)
     {
       if (string.IsNullOrEmpty(settingName))
-        throw new ArgumentNullException("settingName");
+      {
+        throw new ArgumentNullException(nameof(settingName));
+      }
 
       return FindSetting(settingName) != null;
     }
@@ -431,7 +469,7 @@ namespace SharpConfig
     /// Gets the number of settings that are in the section.
     /// </summary>
     public int SettingCount
-      => mSettings.Count;
+      => _settings.Count;
 
     /// <summary>
     /// Gets or sets a setting by index.
@@ -448,10 +486,12 @@ namespace SharpConfig
     {
       get
       {
-        if (index < 0 || index >= mSettings.Count)
-          throw new ArgumentOutOfRangeException("index");
+        if (index < 0 || index >= _settings.Count)
+        {
+          throw new ArgumentOutOfRangeException(nameof(index));
+        }
 
-        return mSettings[index];
+        return _settings[index];
       }
     }
 
@@ -471,11 +511,11 @@ namespace SharpConfig
     {
       get
       {
-        var setting = FindSetting(name);
+        Setting setting = FindSetting(name);
         if (setting == null)
         {
           setting = new Setting(name);
-          mSettings.Add(setting);
+          _settings.Add(setting);
         }
 
         return setting;
@@ -491,27 +531,13 @@ namespace SharpConfig
     /// </returns>
     public IEnumerable<Setting> GetSettingsNamed(string name)
     {
-      var settings = new List<Setting>();
-
-      foreach (var setting in mSettings)
-      {
-        if (string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase))
-          settings.Add(setting);
-      }
-
-      return settings;
+      return _settings.Where(setting => string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
     // Finds a setting by its name.
     private Setting FindSetting(string name)
     {
-      foreach (var setting in mSettings)
-      {
-        if (string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase))
-          return setting;
-      }
-
-      return null;
+      return _settings.FirstOrDefault(setting => string.Equals(setting.Name, name, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>

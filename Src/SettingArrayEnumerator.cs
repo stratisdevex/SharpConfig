@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 namespace SharpConfig
@@ -6,44 +6,49 @@ namespace SharpConfig
   // Enumerates the elements of a Setting that represents an array.
   internal sealed class SettingArrayEnumerator
   {
-    private readonly string mStringValue;
-    private readonly bool mShouldCalcElemString;
-    private int mIdxInString;
-    private readonly int mLastRBraceIdx;
-    private int mPrevElemIdxInString;
-    private int mBraceBalance;
-    private bool mIsInQuotes;
-    private bool mIsDone;
+    private readonly string _stringValue;
+    private readonly bool _shouldCalcElemString;
+    private int _idxInString;
+    private readonly int _lastRBraceIdx;
+    private int _prevElemIdxInString;
+    private int _braceBalance;
+    private bool _isInQuotes;
+    private bool _isDone;
 
     public SettingArrayEnumerator(string value, bool shouldCalcElemString)
     {
-      mStringValue = value;
-      mIdxInString = -1;
-      mLastRBraceIdx = -1;
-      mShouldCalcElemString = shouldCalcElemString;
+      _stringValue = value;
+      _idxInString = -1;
+      _lastRBraceIdx = -1;
+      _shouldCalcElemString = shouldCalcElemString;
       IsValid = true;
-      mIsDone = false;
+      _isDone = false;
 
       for (int i = 0; i < value.Length; ++i)
       {
         char ch = value[i];
         if (ch != ' ' && ch != '{')
-          break;
-
-        if (ch == '{')
         {
-          mIdxInString = i + 1;
-          mBraceBalance = 1;
-          mPrevElemIdxInString = i + 1;
           break;
         }
+
+        if (ch != '{')
+        {
+          continue;
+        }
+
+        _idxInString = i + 1;
+        _braceBalance = 1;
+        _prevElemIdxInString = i + 1;
+
+        break;
       }
 
       // Abort if no valid '{' occurred.
-      if (mIdxInString < 0)
+      if (_idxInString < 0)
       {
         IsValid = false;
-        mIsDone = true;
+        _isDone = true;
         return;
       }
 
@@ -52,39 +57,44 @@ namespace SharpConfig
       {
         char ch = value[i];
         if (ch != ' ' && ch != '}')
-          break;
-
-        if (ch == '}')
         {
-          mLastRBraceIdx = i;
           break;
         }
+
+        if (ch != '}')
+        {
+          continue;
+        }
+
+        _lastRBraceIdx = i;
+
+        break;
       }
 
       // Abort if no valid '}' occurred.
-      if (mLastRBraceIdx < 0)
+      if (_lastRBraceIdx < 0)
       {
         IsValid = false;
-        mIsDone = true;
+        _isDone = true;
         return;
       }
 
       // See if this is an empty array such as "{    }" or "{}".
       // If so, this is a valid array, but with size 0.
-      if (mIdxInString == mLastRBraceIdx ||
-          !IsNonEmptyValue(mStringValue, mIdxInString, mLastRBraceIdx))
+      if (_idxInString == _lastRBraceIdx ||
+          !IsNonEmptyValue(_stringValue, _idxInString, _lastRBraceIdx))
       {
         IsValid = true;
-        mIsDone = true;
+        _isDone = true;
         return;
       }
     }
 
     private void UpdateElementString(int idx)
     {
-      Current = mStringValue.Substring(
-        mPrevElemIdxInString,
-        idx - mPrevElemIdxInString
+      Current = _stringValue.Substring(
+        _prevElemIdxInString,
+        idx - _prevElemIdxInString
         );
 
       Current = Current.Trim(' '); // trim spaces first
@@ -92,70 +102,76 @@ namespace SharpConfig
       // Now trim the quotes, but only the first and last, because
       // the setting value itself can contain quotes.
       if (Current[Current.Length - 1] == '\"')
+      {
         Current = Current.Remove(Current.Length - 1, 1);
+      }
 
       if (Current[0] == '\"')
+      {
         Current = Current.Remove(0, 1);
+      }
     }
 
     public bool Next()
     {
-      if (mIsDone)
-        return false;
-
-      int idx = mIdxInString;
-      while (idx <= mLastRBraceIdx)
+      if (_isDone)
       {
-        char ch = mStringValue[idx];
-        if (ch == '{' && !mIsInQuotes)
+        return false;
+      }
+
+      int idx = _idxInString;
+      while (idx <= _lastRBraceIdx)
+      {
+        char ch = _stringValue[idx];
+        if (ch == '{' && !_isInQuotes)
         {
-          ++mBraceBalance;
+          ++_braceBalance;
         }
-        else if (ch == '}' && !mIsInQuotes)
+        else if (ch == '}' && !_isInQuotes)
         {
-          --mBraceBalance;
-          if (idx == mLastRBraceIdx)
+          --_braceBalance;
+          if (idx == _lastRBraceIdx)
           {
             // This is the last element.
-            if (!IsNonEmptyValue(mStringValue, mPrevElemIdxInString, idx))
+            if (!IsNonEmptyValue(_stringValue, _prevElemIdxInString, idx))
             {
               // Empty array element; invalid array.
               IsValid = false;
             }
-            else if (mShouldCalcElemString)
+            else if (_shouldCalcElemString)
             {
               UpdateElementString(idx);
             }
-            mIsDone = true;
+            _isDone = true;
             break;
           }
         }
         else if (ch == '\"')
         {
-          int iNextQuoteMark = mStringValue.IndexOf('\"', idx + 1);
-          if (iNextQuoteMark > 0 && mStringValue[iNextQuoteMark - 1] != '\\')
+          int iNextQuoteMark = _stringValue.IndexOf('\"', idx + 1);
+          if (iNextQuoteMark > 0 && _stringValue[iNextQuoteMark - 1] != '\\')
           {
             idx = iNextQuoteMark;
-            mIsInQuotes = false;
+            _isInQuotes = false;
           }
           else
           {
-            mIsInQuotes = true;
+            _isInQuotes = true;
           }
         }
-        else if (ch == Configuration.ArrayElementSeparator && mBraceBalance == 1 && !mIsInQuotes)
+        else if (ch == Configuration.ArrayElementSeparator && _braceBalance == 1 && !_isInQuotes)
         {
-          if (!IsNonEmptyValue(mStringValue, mPrevElemIdxInString, idx))
+          if (!IsNonEmptyValue(_stringValue, _prevElemIdxInString, idx))
           {
             // Empty value in-between commas; this is an invalid array.
             IsValid = false;
           }
-          else if (mShouldCalcElemString)
+          else if (_shouldCalcElemString)
           {
             UpdateElementString(idx);
           }
 
-          mPrevElemIdxInString = idx + 1;
+          _prevElemIdxInString = idx + 1;
 
           // Yield.
           ++idx;
@@ -165,10 +181,12 @@ namespace SharpConfig
         ++idx;
       }
 
-      mIdxInString = idx;
+      _idxInString = idx;
 
-      if (mIsInQuotes)
+      if (_isInQuotes)
+      {
         IsValid = false;
+      }
 
       return IsValid;
     }
@@ -176,8 +194,12 @@ namespace SharpConfig
     private static bool IsNonEmptyValue(string s, int begin, int end)
     {
       for (; begin < end; ++begin)
+      {
         if (s[begin] != ' ')
+        {
           return true;
+        }
+      }
 
       return false;
     }

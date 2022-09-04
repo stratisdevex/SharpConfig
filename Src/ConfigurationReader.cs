@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System;
@@ -40,7 +40,9 @@ namespace SharpConfig
 
         // Do not process empty lines.
         if (string.IsNullOrEmpty(line))
+        {
           continue;
+        }
 
         var comment = ParseComment(line, out int commentIndex);
 
@@ -48,25 +50,33 @@ namespace SharpConfig
         {
           // pre-comment
           if (!Configuration.IgnorePreComments)
+          {
             preCommentBuilder.AppendLine(comment);
+          }
 
           continue;
         }
 
         string lineWithoutComment = line;
         if (commentIndex > 0)
+        {
           lineWithoutComment = line.Remove(commentIndex).Trim(); // remove inline comment
+        }
 
         if (lineWithoutComment.StartsWith("[")) // Section
         {
           // If the first section has been found but settings already exist, add them to the default section.
           if (currentSection.Name == Section.DefaultSectionName && currentSection.SettingCount > 0)
-            config.mSections.Add(currentSection);
+          {
+            config._sections.Add(currentSection);
+          }
 
           currentSection = ParseSection(lineWithoutComment, lineNumber);
 
           if (!Configuration.IgnoreInlineComments)
+          {
             currentSection.Comment = comment;
+          }
 
           if (!Configuration.IgnorePreComments && preCommentBuilder.Length > 0)
           {
@@ -75,14 +85,16 @@ namespace SharpConfig
             preCommentBuilder.Length = 0; // Clear the SB - With .NET >= 4.0: preCommentBuilder.Clear()
           }
 
-          config.mSections.Add(currentSection);
+          config._sections.Add(currentSection);
         }
         else // Setting
         {
           var setting = ParseSetting(Configuration.IgnoreInlineComments ? line : lineWithoutComment, lineNumber);
 
           if (!Configuration.IgnoreInlineComments)
+          {
             setting.Comment = comment;
+          }
 
           if (!Configuration.IgnorePreComments && preCommentBuilder.Length > 0)
           {
@@ -108,20 +120,24 @@ namespace SharpConfig
       string comment = null;
       commentCharIndex = -1;
 
-      var index = 0;
-      var quoteCount = 0;
+      int index = 0;
+      int quoteCount = 0;
       while (line.Length > index) // traverse line from left to right
       {
-        var isValidCommentChar = Array.IndexOf(Configuration.ValidCommentChars, line[index]) > -1;
-        var isQuotationMark = line[index] == '\"';
-        var isCharWithinQuotes = quoteCount % 2 == 1;
-        var isCharEscaped = index > 0 && line[index - 1] == '\\';
+        bool isValidCommentChar = Array.IndexOf(Configuration.ValidCommentChars, line[index]) > -1;
+        bool isQuotationMark = line[index] == '\"';
+        bool isCharWithinQuotes = quoteCount % 2 == 1;
+        bool isCharEscaped = index > 0 && line[index - 1] == '\\';
 
         if (isValidCommentChar && !isCharWithinQuotes && !isCharEscaped)
+        {
           break; // a comment has started
+        }
 
         if (isQuotationMark && !isCharEscaped)
+        {
           quoteCount++; // a non-escaped quotation mark has been found
+        }
 
         index++;
       }
@@ -144,20 +160,23 @@ namespace SharpConfig
 
       int closingBracketIndex = line.LastIndexOf(']');
       if (closingBracketIndex < 0)
+      {
         throw new ParserException("closing bracket missing.", lineNumber);
+      }
 
       string sectionName = line.Substring(1, closingBracketIndex - 1).Trim();
 
       // Anything after the (last) closing bracket must be whitespace.
-      if (line.Length > closingBracketIndex + 1)
+      if (line.Length <= closingBracketIndex + 1)
       {
-        var endPart = line.Substring(closingBracketIndex + 1).Trim();
-
-        if (endPart.Length > 0)
-          throw new ParserException($"unexpected token: '{endPart}'", lineNumber);
+        return new Section(sectionName);
       }
 
-      return new Section(sectionName);
+      string endPart = line.Substring(closingBracketIndex + 1).Trim();
+
+      return endPart.Length > 0
+        ? throw new ParserException($"unexpected token: '{endPart}'", lineNumber)
+        : new Section(sectionName);
     }
 
     private static Setting ParseSetting(string line, int lineNumber)
@@ -184,7 +203,9 @@ namespace SharpConfig
         while (closingQuoteIndex > 0 && line[closingQuoteIndex - 1] == '\\');
 
         if (closingQuoteIndex < 0)
+        {
           throw new ParserException("closing quote mark expected.", lineNumber);
+        }
 
         // Don't trim the name. Quoted names should be taken verbatim.
         settingName = line.Substring(1, closingQuoteIndex - 1);
@@ -198,15 +219,21 @@ namespace SharpConfig
       }
 
       if (equalSignIndex < 0)
+      {
         throw new ParserException("setting assignment expected.", lineNumber);
+      }
 
       if (!isQuotedName)
+      {
         settingName = line.Substring(0, equalSignIndex).Trim();
+      }
 
       if (string.IsNullOrEmpty(settingName))
+      {
         throw new ParserException("setting name expected.", lineNumber);
+      }
 
-      var settingValue = line.Substring(equalSignIndex + 1).Trim();
+      string settingValue = line.Substring(equalSignIndex + 1).Trim();
 
       return new Setting(settingName, settingValue);
     }
@@ -214,10 +241,14 @@ namespace SharpConfig
     internal static Configuration ReadFromBinaryStream(Stream stream, BinaryReader reader)
     {
       if (stream == null)
-        throw new ArgumentNullException("stream");
+      {
+        throw new ArgumentNullException(nameof(stream));
+      }
 
       if (reader == null)
+      {
         reader = new BinaryReader(stream);
+      }
 
       var config = new Configuration();
 

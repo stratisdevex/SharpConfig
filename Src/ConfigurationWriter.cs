@@ -1,10 +1,10 @@
-// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System;
-using System.Text;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace SharpConfig
 {
@@ -32,10 +32,14 @@ namespace SharpConfig
       Debug.Assert(cfg != null);
 
       if (stream == null)
-        throw new ArgumentNullException("stream");
+      {
+        throw new ArgumentNullException(nameof(stream));
+      }
 
       if (encoding == null)
+      {
         encoding = Encoding.UTF8;
+      }
 
       var str = cfg.StringRepresentation;
 
@@ -52,10 +56,14 @@ namespace SharpConfig
       Debug.Assert(cfg != null);
 
       if (stream == null)
-        throw new ArgumentNullException("stream");
+      {
+        throw new ArgumentNullException(nameof(stream));
+      }
 
       if (writer == null)
+      {
         writer = new NonClosingBinaryWriter(stream);
+      }
 
       writer.Write(cfg.SectionCount);
 
