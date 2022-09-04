@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2013-2018 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System;
@@ -10,6 +10,7 @@ namespace Tests
   class Person
   {
     public string Name { get; set; }
+
     public int Age { get; set; }
   }
 
@@ -19,7 +20,7 @@ namespace Tests
     public override string ConvertToString(object value)
     {
       var person = (Person)value;
-      return string.Format("[{0};{1}]", person.Name, person.Age);
+      return $"[{person.Name};{person.Age}]";
     }
 
     // This method attempts to convert the value to a Person object.
@@ -28,17 +29,13 @@ namespace Tests
     {
       try
       {
-        var split = value.Trim('[', ']').Split(';');
+        string[] split = value.Trim('[', ']').Split(';');
 
-        var person = new Person();
-        person.Name = split[0];
-        person.Age = int.Parse(split[1]);
-
-        return person;
+        return new Person { Name = split[0], Age = int.Parse(split[1]) };
       }
       catch
       {
-        return null;
+        return null!;
       }
     }
   }

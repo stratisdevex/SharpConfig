@@ -1,10 +1,8 @@
-﻿// Copyright (c) 2013-2018 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
-using System;
-using SharpConfig;
 using NUnit.Framework;
-using System.IO;
+using SharpConfig;
 
 namespace Tests
 {
@@ -286,7 +284,7 @@ namespace Tests
       Assert.AreEqual(2, section2["ValidUglySetting3"].ArraySize);
       Assert.AreEqual("first", section2["ValidUglySetting3"].StringValueArray[0]);
       Assert.AreEqual("second # still, second", section2["ValidUglySetting3"].StringValueArray[1]);
-      
+
     }
 
     [Test]
@@ -336,7 +334,8 @@ namespace Tests
     sealed class SectionTestObject
     {
       public string[] SomeArrayProp { get; set; }
-      public string[] SomeArrayField = null;
+
+      public string[] SomeArrayField;
     }
 
     [Test]
@@ -583,17 +582,12 @@ namespace Tests
        * Use explicit type argument specification in all cases even though
        * it is not always necessary. */
 
-      #region Bool
-
       setting.BoolValue = true; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<bool>(false), true);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<bool>(false), false);
       setting.GetValueOrDefault<bool>(false, true); // test setDef
       Assert.AreEqual(setting.BoolValue, false);
-
-      #endregion
-      #region Byte
 
       setting.ByteValue = 100; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<byte>(200), 100);
@@ -602,18 +596,12 @@ namespace Tests
       setting.GetValueOrDefault<byte>(200, true); // test setDef
       Assert.AreEqual(setting.ByteValue, 200);
 
-      #endregion
-      #region Char
-
       setting.CharValue = 'c'; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<char>('f'), 'c');
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<char>('f'), 'f');
       setting.GetValueOrDefault<char>('f', true); // test setDef
       Assert.AreEqual(setting.CharValue, 'f');
-
-      #endregion
-      #region DateTime
 
       // Some problems with DateTime.ToString omitting milliseconds when DateTime.Now was used as test value.
       setting.DateTimeValue = DateTime.Today; // valid value
@@ -623,9 +611,6 @@ namespace Tests
       setting.GetValueOrDefault<DateTime>(DateTime.MinValue, true); // test setDef
       Assert.AreEqual(setting.DateTimeValue, DateTime.MinValue);
 
-      #endregion
-      #region Decimal
-
       setting.DecimalValue = 2004.40493028m; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<decimal>(1000.2028m), 2004.40493028m);
       setting.SetValue("invalid value"); // invalid value
@@ -633,18 +618,12 @@ namespace Tests
       setting.GetValueOrDefault<decimal>(1000.2028m, true); // test setDef
       Assert.AreEqual(setting.DecimalValue, 1000.2028m);
 
-      #endregion
-      #region Double
-
       setting.DoubleValue = 404.404; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<double>(123.456), 404.404);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<double>(123.456), 123.456);
       setting.GetValueOrDefault<double>(123.456, true); // test setDef
       Assert.AreEqual(setting.DoubleValue, 123.456);
-
-      #endregion
-      #region Enum
 
       // Chose a random enum
       setting.SetValue(GCNotificationStatus.NotApplicable); // valid value
@@ -654,18 +633,12 @@ namespace Tests
       setting.GetValueOrDefault<GCNotificationStatus>(GCNotificationStatus.Succeeded, true); // test setDef
       Assert.AreEqual(setting.GetValue(typeof(GCNotificationStatus)), GCNotificationStatus.Succeeded);
 
-      #endregion
-      #region Int16
-
       setting.SetValue((short)123); // valid value
       Assert.AreEqual(setting.GetValueOrDefault<short>(456), 123);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<short>(456), 456);
       setting.GetValueOrDefault<short>(456, true); // test setDef
       Assert.AreEqual(setting.GetValue(typeof(short)), 456);
-
-      #endregion
-      #region Int32
 
       setting.IntValue = 4567; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<int>(1010), 4567);
@@ -674,18 +647,12 @@ namespace Tests
       setting.GetValueOrDefault<int>(1010, true); // test setDef
       Assert.AreEqual(setting.IntValue, 1010);
 
-      #endregion
-      #region Int64
-
       setting.SetValue((long)75467456); // valid value
       Assert.AreEqual(setting.GetValueOrDefault<long>(14623146), 75467456);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<long>(14623146), 14623146);
       setting.GetValueOrDefault<long>(14623146, true); // test setDef
       Assert.AreEqual(setting.GetValue(typeof(long)), 14623146);
-
-      #endregion
-      #region SByte
 
       setting.SByteValue = 123; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<sbyte>(-123), 123);
@@ -694,18 +661,12 @@ namespace Tests
       setting.GetValueOrDefault<sbyte>(-123, true); // test setDef
       Assert.AreEqual(setting.SByteValue, -123);
 
-      #endregion
-      #region Single
-
       setting.FloatValue = 123.456f; // valid value
       Assert.AreEqual(setting.GetValueOrDefault<float>(-456.123f), 123.456f);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<float>(-456.123f), -456.123f);
       setting.GetValueOrDefault<float>(-456.123f, true); // test setDef
       Assert.AreEqual(setting.FloatValue, -456.123f);
-
-      #endregion
-      #region String
 
       // Test that double quotation marks are trimmed properly
       setting.StringValue = "\"string\"";
@@ -715,18 +676,12 @@ namespace Tests
       setting.GetValueOrDefault<string>("\"\"\"Triple quotes\"\"\"", true); // test setDef
       Assert.AreEqual(setting.StringValue, "Triple quotes");
 
-      #endregion
-      #region UInt16
-
       setting.SetValue((ushort)1000); // valid value
       Assert.AreEqual(setting.GetValueOrDefault<ushort>(2000), 1000);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<ushort>(2000), 2000);
       setting.GetValueOrDefault<ushort>(2000, true); // test setDef
       Assert.AreEqual(setting.GetValue(typeof(ushort)), 2000);
-
-      #endregion
-      #region UInt32
 
       setting.SetValue((uint)12345); // valid value
       Assert.AreEqual(setting.GetValueOrDefault<uint>(54321), 12345);
@@ -735,22 +690,17 @@ namespace Tests
       setting.GetValueOrDefault<uint>(54321, true); // test setDef
       Assert.AreEqual(setting.GetValue(typeof(uint)), 54321);
 
-      #endregion
-      #region UInt64
-
       setting.SetValue((ulong)1234567); // valid value
       Assert.AreEqual(setting.GetValueOrDefault<ulong>(7654321), 1234567);
       setting.SetValue("invalid value"); // invalid value
       Assert.AreEqual(setting.GetValueOrDefault<ulong>(7654321), 7654321);
       setting.GetValueOrDefault<ulong>(7654321, true); // test setDef
       Assert.AreEqual(setting.GetValue(typeof(ulong)), 7654321);
-
-      #endregion
     }
 
     private static void TestWithFile(Configuration cfg, Action<string> action)
     {
-      var filename = Path.GetTempFileName();
+      string filename = Path.GetTempFileName();
       try
       {
         action(filename);
@@ -758,7 +708,9 @@ namespace Tests
       finally
       {
         if (File.Exists(filename))
+        {
           File.Delete(filename);
+        }
       }
     }
 

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2013-2018 Cemalettin Dervis, MIT License.
+﻿// Copyright (c) 2013-2022 Cemalettin Dervis, MIT License.
 // https://github.com/cemdervis/SharpConfig
 
 using System.IO;
@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace Tests
 {
   [TestFixture]
-  public sealed class ConfigIOTest
+  public sealed class ConfigIoTest
   {
     private static Configuration CreateExampleConfig()
     {
@@ -29,7 +29,7 @@ namespace Tests
     [Test]
     public void WriteAndReadConfig_File()
     {
-      var cfg = CreateExampleConfig();
+      Configuration cfg = CreateExampleConfig();
 
       string filename = Path.GetTempFileName();
 
@@ -45,7 +45,7 @@ namespace Tests
     [Test]
     public void WriteAndReadConfig_Stream()
     {
-      var cfg = CreateExampleConfig();
+      Configuration cfg = CreateExampleConfig();
 
       var stream = new MemoryStream();
       cfg.SaveToStream(stream);
@@ -61,7 +61,7 @@ namespace Tests
     [Test]
     public void WriteAndReadConfig_BinaryFile()
     {
-      var cfg = CreateExampleConfig();
+      Configuration cfg = CreateExampleConfig();
 
       string filename = Path.GetTempFileName();
 
@@ -77,7 +77,7 @@ namespace Tests
     [Test]
     public void WriteAndReadConfig_BinaryStream()
     {
-      var cfg = CreateExampleConfig();
+      Configuration cfg = CreateExampleConfig();
 
       var stream = new MemoryStream();
       cfg.SaveToBinaryStream(stream);
